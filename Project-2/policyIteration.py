@@ -9,48 +9,50 @@ import random as rnd
 import copy
 
 def policyEvaluation(classObject,theta,gamma):
-    vk = classObject.getValue()
-    vOld = copy.deepcopy(vk)
     
     condition = True
-    while condition:
-        for i,j in classObject.stateGenerator():
-            delta = 0
-            prob,r,adjacentStates = classObject.reward((i,j))
-            v = vOld[adjacentStates]
+    while condition == True:
+        delta = 0
+        vold = classObject.getValue()
+        vk = copy.deepcopy(vold)
+        for t in classObject.stateGenerator():
+            prob,r,adjacentStates = classObject.reward(t)
+            v = vk[adjacentStates]
             v = gamma*v
             v = r + v
             ans = sum(np.multiply(prob,v))
-            classObject.setValue((i,j),ans)
-            delta = max(delta,abs(vOld[i,j]-ans))
-            print(delta)
-            if delta < theta:
-                condition = False
-
+            classObject.setValue(t,ans)
+            delta = max(delta,abs(vk[t]-ans))
+        if delta < theta:
+            condition = False
+    
 def policyIter(classObject,theta,gamma):
+    stopAfter = 0
     same = False
+    actions = classObject.getActionList()
+
     while same == False:
         policyEvaluation(classObject,theta,gamma)
         vOld = classObject.getValue()
+        vk = copy.deepcopy(vOld)
         policy = classObject.getPolicy()
         policyOld = copy.deepcopy(policy)
         
-        for i,j in classObject.stateGenerator():
-            print(i,j)
-            actions = classObject.getActionList()
-            highVal = classObject.getStateValue((i,j))
-            print(i,j)
+        for t in classObject.stateGenerator():
+            highVal = vk[t]
             for action in actions:
-                prob,r,adjacentStates = classObject.reward((i,j),action)
+                prob,r,adjacentStates = classObject.reward(t,action)
                 v = vOld[adjacentStates]
                 v = gamma*v
                 v = r + v
                 ans = sum(np.multiply(prob,v))
 
                 if ans > highVal:
-                    classObject.setPolicy((i,j),action)
+                    classObject.setStatePolicy(t,action)
+                    highVal = ans
         
-        if policyOld == classObject.getPolicy():
+        if np.array_equal(policyOld,classObject.getPolicy()):
             same = True
+            print('Stopped')
                 
 
